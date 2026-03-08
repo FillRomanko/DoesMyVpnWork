@@ -1,6 +1,6 @@
 ﻿{
   "name": "Does my VPN work?",
-  "short_name": "checkVPN",
+  "short_name": "check VPN",
   "icons": [
     {
       "src": "../icons/icon.svg",
@@ -27,7 +27,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/DoesMyVpnWork/",
+  "start_url": "../index.html",
+  "scope": "../",
   "display": "standalone",
   "theme_color": "#000000",
   "background_color": "#000000"
