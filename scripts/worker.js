@@ -1,4 +1,5 @@
-﻿const CACHE_NAME = 'fetcher-v1';
+﻿const VERSION = '2025.03.08.15';
+const CACHE_NAME = `fetcher-${VERSION}`;
 const urlsToCache = [
     '/',
     '/index.html',
@@ -10,6 +11,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => cache.addAll(urlsToCache))
@@ -26,7 +28,7 @@ self.addEventListener('activate', event => {
                     }
                 })
             );
-        })
+        }).then(() => clients.claim())
     );
 });
 

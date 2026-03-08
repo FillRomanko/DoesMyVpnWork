@@ -2,9 +2,35 @@
 let isInstalled = false;
 
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/worker.js').catch(console.error);
+    navigator.serviceWorker.register('/worker.js').then(reg => {
+        // Проверка обновлений при каждой загрузке
+        reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showUpdateNotification();
+                }
+            });
+        });
+    }).catch(console.error);
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+        }
     });
+}
+
+function showUpdateNotification() {
+    const banner = document.createElement('div');
+    banner.className = 'update-banner';
+    banner.innerHTML = `
+        Доступна новая версия. 
+        <button onclick="window.location.reload()">Обновить</button>
+    `;
+    document.body.prepend(banner);
 }
 
 
@@ -37,8 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const btnInstallApp = document.querySelector('[data-js="install-btn"]');
-    btnInstallApp.onclick = handleInstall;
 
     const btnStartTest = document.querySelector('[data-js="start-test"]');
     const testContainer = document.querySelector('[data-js="test-container"]');
