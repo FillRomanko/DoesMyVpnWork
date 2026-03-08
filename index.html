@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Does my VPN work? </title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stylesheet/style.css">
     <link rel="manifest" href="data/manifest.json">
     <meta name="theme-color" content="#000000">
-    <!-- <link rel="icon" type="image/svg+xml" href="images/icon.svg"> -->
+    <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+
 </head>
 <body>
-<script src="scripts/app.js" defer></script>
+    <button data-js="theme-toggler" class="theme-toggler"></button>
+    <button data-js="start-test" class="start-test">Проверить работу сети</button>
+    <div class="test-container" data-js="test-container"></div>
+    <button data-js='install-btn' hidden>Установить на мое устройство</button>
+    <script src="scripts/app.js" defer></script>
 </body>
 </html>
