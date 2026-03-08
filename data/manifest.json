@@ -1,6 +1,6 @@
 ﻿{
   "name": "Does my VPN work?",
-  "short_name": "check VPN",
+  "short_name": "Does my VPN work?",
   "icons": [
     {
       "src": "../icons/icon.svg",
