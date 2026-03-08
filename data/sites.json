@@ -1,5 +1,5 @@
 ﻿{
-  "internet": ["http://example.com/"],
+  "internet": ["https://example.com/"],
   "white": ["https://gosuslugi.ru",
     "https://www.gosuslugi.ru",
     "https://www.gosuslugi.ru/help",
