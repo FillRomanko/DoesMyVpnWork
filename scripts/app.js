@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 3. Кнопка повтора (скрыта до окончания)
         const retryBtn = document.createElement('button');
-        retryBtn.textContent = 'Пройти тест снова';
+        retryBtn.textContent = 'Обновить страницу';
         retryBtn.className = 'retry-btn';
         retryBtn.style.display = 'none';
         retryBtn.onclick = () => location.reload();
