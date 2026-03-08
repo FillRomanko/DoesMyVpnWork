@@ -45,3 +45,10 @@ button:hover { opacity: 0.9; }
 .tooltip:hover::after { opacity: 1; }
 .status { margin: 2vh 0; font-size: 1.2em; font-weight: bold; }
 .retry-btn { margin-top: 1vh; width: 16vw;}
+
+@media (orientation: portrait) {
+    body{font-size: 4vw;}
+    button{font-size: 2vw;}
+    .tooltip{font-size: 4vw;}
+    .tooltip:after{font-size: 2vw;}
+}
