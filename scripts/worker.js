@@ -1,4 +1,4 @@
-﻿const VERSION = '2025.03.08.143';
+﻿const VERSION = '2025.03.08.145';
 const CACHE_NAME = `fetcher-${VERSION}`;
 const urlsToCache = [
     '/',
@@ -20,15 +20,11 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => clients.claim())
+        (async () => {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(key => key !== CACHE_NAME && caches.delete(key)));
+            await self.clients.claim();
+        })()
     );
 });
 
@@ -37,21 +33,18 @@ self.addEventListener('fetch', event => {
 });
 
 async function handleFetch(request) {
-    // Проверь кэш сначала
-    const cached = await caches.match(request);
-    if (cached) return cached;
-
-    if (request.destination === 'document' || isSiteRequest(request.url)) {
+    if (request.destination === 'document' || await isSiteRequest(request.url)) {
         try {
             const netResponse = await fetch(request);
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, netResponse.clone());
             return netResponse;
         } catch {
+            const cached = await caches.match(request);
+            if (cached) return cached;
             return new Response('Offline: сайты недоступны', { status: 503 });
         }
     }
-
     return caches.match('/index.html');
 }
 
