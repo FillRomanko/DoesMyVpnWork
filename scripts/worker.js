@@ -1,4 +1,4 @@
-﻿const VERSION = '2025.03.08.125';
+﻿const VERSION = '2025.03.08.1254';
 const CACHE_NAME = `fetcher-${VERSION}`;
 const urlsToCache = [
     '/',
