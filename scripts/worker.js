@@ -1,4 +1,10 @@
-﻿const VERSION = '2025.03.08.153';
+﻿async function getVersion() {
+    const resp = await fetch('/data/version.json');
+    const data = await resp.json();
+    return data.version;
+}
+
+const VERSION = getVersion();
 const CACHE_NAME = `fetcher-${VERSION}`;
 const urlsToCache = [
     '/',

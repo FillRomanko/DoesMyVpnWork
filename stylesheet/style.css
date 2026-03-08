@@ -11,6 +11,7 @@
     --btn-bg: #0d6efd;
 }
 body { background: var(--bg); height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--fg); font-family: sans-serif; font-size: 2vw; overflow: hidden; touch-action: none;}
+.version-controller{color: var(--fg); position: absolute; top: 3vw;}
 button { background: var(--btn-bg); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 1vw; pointer-events: auto;}
 .theme-toggler {position: absolute; top: 1vw; right: 1vw; height: 5vw; width: 5vw; background: var(--fg); color: var(--bg);}
 button:hover { opacity: 0.9; }
@@ -48,27 +49,17 @@ button:hover { opacity: 0.9; }
 
 @media (max-width: 768px) {
     body {height: auto;min-height: 100svh;font-size: 16px;padding: 20px;text-align: center;}
+    .version-controller {top: 32px;}
     button {font-size: 14px;padding: 10px 16px;}
-
     .theme-toggler {top: 12px;right: 12px;width: 44px;height: 44px; display: flex;align-items: center;justify-content: center; padding: 0;}
-
     .theme-toggler svg {width: 20px;height: 20px;}
-
     .test-container {width: 100%;max-width: 420px;gap: 12px;}
-
     .row {width: 100%;gap: 10px;}
-
     .rects-container {gap: 8px;}
-
     .rect {width: 42px; height: 28px;margin-right: 0;}
-
     .stats {font-size: 14px;margin-right: 6px;}
-
     .tooltip {font-size: 18px;}
-
     .tooltip::after {font-size: 12px;left: 50%;transform: translateX(-50%);}
-
     .status {font-size: 18px;margin: 16px 0;}
-
     .retry-btn {width: 220px;margin-top: 10px;}
 }
