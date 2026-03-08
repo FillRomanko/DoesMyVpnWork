@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const html = document.documentElement;
     const btnTheme = document.querySelector('[data-js="theme-toggler"]');
-    let currentTheme = localStorage.getItem('theme') || 'light';
+    let currentTheme = localStorage.getItem('theme') || 'dark';
     html.setAttribute('data-theme', currentTheme);
     btnTheme.innerHTML = currentTheme === 'light' ? moonIcon : sunIcon;
     btnTheme.addEventListener( "click", () => {
