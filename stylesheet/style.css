@@ -47,8 +47,9 @@ button:hover { opacity: 0.9; }
 .retry-btn { margin-top: 1vh; width: 16vw;}
 
 @media (orientation: portrait) {
-    body{font-size: 4vw;}
-    button{font-size: 2vw;}
-    .tooltip{font-size: 4vw;}
-    .tooltip:after{font-size: 2vw;}
+    body { font-size: clamp(2rem, 4vmin, 3rem); }
+    button { font-size: clamp(1rem, 4vmin, 1rem); }
+    .tooltip { font-size: clamp(1.5rem, 4vmin, 2rem); }
+    .tooltip::after { font-size: clamp(0.8rem, 4vmin, 1rem); }
+    .rect{width: 6vh;}
 }
