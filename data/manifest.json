@@ -2,7 +2,18 @@
   "name": "Does my VPN work?",
   "short_name": "checkVPN",
   "icons": [
-    {"src": "../icons/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable any"}
+    {
+      "src": "../icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "../icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ],
   "start_url": "/DoesMyVpnWork/",
   "display": "standalone",
