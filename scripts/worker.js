@@ -1,11 +1,15 @@
-﻿async function getVersion() {
-    const resp = await fetch('/data/version.json');
-    const data = await resp.json();
-    return data.version;
+﻿async function getCacheName() {
+    try {
+        const resp = await fetch('/data/version.json');
+        const data = await resp.json();
+        return `fetcher-${data.version}`;
+    } catch {
+        return 'fetcher-fallback'; // Запасной вариант
+    }
 }
 
-const VERSION = getVersion();
-const CACHE_NAME = `fetcher-${VERSION}`;
+const CACHE_NAME = getCacheName();
+
 const urlsToCache = [
     '/',
     '/index.html',
@@ -17,10 +21,12 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
-    self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
+        (async () => {
+            const name = await getCacheName(); // Ждем версию здесь
+            const cache = await caches.open(name);
+            await cache.addAll(urlsToCache);
+        })()
     );
 });
 
