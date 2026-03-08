@@ -60,7 +60,7 @@ button:hover { opacity: 0.9; }
 
     .rects-container {gap: 8px;}
 
-    .rect {width: 52px; height: 28px;margin-right: 0;}
+    .rect {width: 42px; height: 28px;margin-right: 0;}
 
     .stats {font-size: 14px;margin-right: 6px;}
 
