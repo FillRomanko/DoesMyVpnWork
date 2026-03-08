@@ -1,13 +1,13 @@
 ﻿const VERSION = '2025.03.08.16';
 const CACHE_NAME = `fetcher-${VERSION}`;
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    'data/manifest.json',
-    'data/sites.json',
-    '/icons/favicon.svg',
+    './',
+    './index.html',
+    './stylesheet/style.css',
+    './scripts/app.js',
+    '.data/manifest.json',
+    '.data/sites.json',
+    './icons/favicon.svg',
 ];
 
 self.addEventListener('install', event => {

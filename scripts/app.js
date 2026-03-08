@@ -2,7 +2,7 @@
 let isInstalled = false;
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/worker.js').then(reg => {
+    navigator.serviceWorker.register('scripts/worker.js').then(reg => {
         // Проверка обновлений при каждой загрузке
         reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
