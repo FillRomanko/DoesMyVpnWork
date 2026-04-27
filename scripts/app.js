@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let firstAttemptDone = false;
 
-        await runWithConcurrency(tasks, 5, (result) => {
+        await runWithConcurrency(tasks, 6, (result) => {
             updateCategory(result.cat, result.success);
 
             if (!firstAttemptDone) {
@@ -274,7 +274,7 @@ async function checkSite(site, cat) {
     console.log(`⏳ Запрос к ${site} (категория ${cat})`);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     let success = false;
 
