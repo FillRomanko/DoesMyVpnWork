@@ -274,7 +274,7 @@ async function checkSite(site, cat) {
     console.log(`⏳ Запрос к ${site} (категория ${cat})`);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     let success = false;
 
