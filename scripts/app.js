@@ -1,5 +1,9 @@
-﻿let deferredPrompt = null;
-let isInstalled = false;
+﻿function isRunningAsApp() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true; // iOS Safari
+}
+
+let deferredPrompt = null;
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('scripts/worker.js').then(reg => {
@@ -246,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     statusDiv.textContent = getStatusMessage();
 
                     // Создаём кнопку установки, если ещё не создана
-                    if (!installBtn) {
+                    if (!installBtn && !isRunningAsApp()) {
                         installBtn = document.createElement('button');
                         installBtn.textContent = 'Установить на своё устройство';
                         installBtn.className = 'install-btn'; // добавим класс для стилизации
@@ -275,16 +279,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
     deferredPrompt = e;
 });
 
-window.addEventListener('appinstalled', () => {
-    isInstalled = true;
-    deferredPrompt = null;
-});
-
 function handleInstall() {
-    if (isInstalled) {
-        alert('Уже установлено!');
+    // Если уже запущено как приложение — кнопка вообще не должна была появиться,
+    // но на всякий случай можно подстраховаться:
+    if (isRunningAsApp()) {
+        alert('Приложение уже запущено как установленное');
         return;
     }
+
     if (deferredPrompt) {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
