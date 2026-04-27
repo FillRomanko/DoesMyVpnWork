@@ -6,35 +6,68 @@
 let deferredPrompt = null;
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('scripts/worker.js').then(reg => {
-        // Проверка обновлений при каждой загрузке
-        reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    showUpdateNotification();
-                }
-            });
-        });
-    }).catch(console.error);
-
     let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-            refreshing = true;
-            window.location.reload();
+
+    window.addEventListener('load', async () => {
+        try {
+            const reg = await navigator.serviceWorker.register('/scripts/worker.js', {
+                scope: '/',
+                updateViaCache: 'none'
+            });
+
+            // Явно просим браузер проверить обновление при загрузке страницы
+            try {
+                await reg.update();
+            } catch (e) {
+                console.warn('SW update check failed:', e);
+            }
+
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                if (!newWorker) return;
+
+                newWorker.addEventListener('statechange', () => {
+                    if (
+                        newWorker.state === 'installed' &&
+                        navigator.serviceWorker.controller
+                    ) {
+                        showUpdateNotification(() => {
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        });
+                    }
+                });
+            });
+        } catch (err) {
+            console.error('Service worker registration failed:', err);
         }
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
     });
 }
 
-function showUpdateNotification() {
+function showUpdateNotification(onUpdate) {
+    if (document.querySelector('.update-banner')) return;
+
     const banner = document.createElement('div');
     banner.className = 'update-banner';
     banner.innerHTML = `
-        Доступна новая версия. 
-        <button onclick="window.location.reload()">Обновить</button>
+        Доступна новая версия.
+        <button type="button">Обновить</button>
     `;
+
+    const button = banner.querySelector('button');
+    button.addEventListener('click', () => {
+        if (typeof onUpdate === 'function') {
+            onUpdate();
+        } else {
+            window.location.reload();
+        }
+    });
+
     document.body.prepend(banner);
 }
 

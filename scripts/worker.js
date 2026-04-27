@@ -1,7 +1,7 @@
 ﻿const CACHE_PREFIX = 'fetcher-';
 const VERSION_URL = '/data/version.json';
 
-const urlsToCache = [
+const APP_SHELL = [
     '/',
     '/index.html',
     '/stylesheet/style.css',
@@ -10,110 +10,132 @@ const urlsToCache = [
     '/data/manifest.json',
     '/data/sites.json',
     '/icons/favicon.svg',
+    '/icons/icon.svg',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png',
     '/data/version.json',
 ];
 
-let resolvedCacheName = null;
+let currentCacheName = null;
 
-async function getStoredVersion() {
-    const keys = await caches.keys();
-    const existing = keys
-        .filter(key => key.startsWith(CACHE_PREFIX))
-        .sort()
-        .pop();
+async function fetchVersionFromNetwork() {
+    const response = await fetch(VERSION_URL, { cache: 'no-store' });
 
-    if (!existing) {
-        return { version: null, cacheName: null };
+    if (!response.ok) {
+        throw new Error(`Failed to fetch version.json: ${response.status}`);
     }
 
-    try {
-        const cache = await caches.open(existing);
-        const response = await cache.match(VERSION_URL);
-        if (!response) {
-            return { version: null, cacheName: existing };
-        }
+    const data = await response.json();
 
-        const data = await response.json();
-        return {
-            version: data?.version ?? null,
-            cacheName: existing
-        };
-    } catch {
-        return { version: null, cacheName: existing };
-    }
-}
-
-async function getNetworkVersion() {
-    const resp = await fetch(VERSION_URL, { cache: 'no-store' });
-    if (!resp.ok) {
-        throw new Error(`Failed to fetch version.json: ${resp.status}`);
-    }
-
-    const data = await resp.json();
     if (!data?.version) {
-        throw new Error('version.json has no "version" field');
+        throw new Error('version.json does not contain "version"');
     }
 
     return data.version;
 }
 
-async function ensureVersionedCache() {
-    if (resolvedCacheName) return resolvedCacheName;
-
-    const stored = await getStoredVersion();
+async function getActiveCacheName() {
+    if (currentCacheName) return currentCacheName;
 
     try {
-        const networkVersion = await getNetworkVersion();
-        const nextCacheName = `${CACHE_PREFIX}${networkVersion}`;
-
-        if (stored.version !== networkVersion) {
-            const cache = await caches.open(nextCacheName);
-
-            for (const url of urlsToCache) {
-                try {
-                    await cache.add(url);
-                } catch (err) {
-                    console.warn('[SW] Failed to cache:', url, err);
-                }
-            }
-
-            const keys = await caches.keys();
-            await Promise.all(
-                keys
-                    .filter(key => key.startsWith(CACHE_PREFIX) && key !== nextCacheName)
-                    .map(key => caches.delete(key))
-            );
-        }
-
-        resolvedCacheName = nextCacheName;
-        return resolvedCacheName;
+        const version = await fetchVersionFromNetwork();
+        currentCacheName = `${CACHE_PREFIX}${version}`;
+        return currentCacheName;
     } catch {
-        resolvedCacheName = stored.cacheName || `${CACHE_PREFIX}fallback`;
+        const keys = await caches.keys();
+        const existing = keys
+            .filter(key => key.startsWith(CACHE_PREFIX))
+            .sort()
+            .pop();
 
-        if (resolvedCacheName === `${CACHE_PREFIX}fallback`) {
-            const fallbackCache = await caches.open(resolvedCacheName);
+        currentCacheName = existing || `${CACHE_PREFIX}fallback`;
+        return currentCacheName;
+    }
+}
 
-            for (const url of urlsToCache) {
-                try {
-                    await fallbackCache.add(url);
-                } catch {}
-            }
+async function precacheAppShell(cacheName) {
+    const cache = await caches.open(cacheName);
+
+    for (const url of APP_SHELL) {
+        try {
+            await cache.add(url);
+        } catch (err) {
+            console.warn('[SW] Failed to precache:', url, err);
+        }
+    }
+}
+
+async function installCurrentVersion() {
+    const version = await fetchVersionFromNetwork();
+    const cacheName = `${CACHE_PREFIX}${version}`;
+    await precacheAppShell(cacheName);
+    currentCacheName = cacheName;
+}
+
+async function deleteOldCaches(keepCacheName) {
+    const keys = await caches.keys();
+
+    await Promise.all(
+        keys
+            .filter(key => key.startsWith(CACHE_PREFIX) && key !== keepCacheName)
+            .map(key => caches.delete(key))
+    );
+}
+
+async function networkFirst(request, cacheName) {
+    const cache = await caches.open(cacheName);
+
+    try {
+        const response = await fetch(request);
+
+        if (response && response.ok) {
+            await cache.put(request, response.clone());
         }
 
-        return resolvedCacheName;
+        return response;
+    } catch {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+
+        throw new Error('Network and cache both failed');
     }
+}
+
+async function cacheFirst(request, cacheName) {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(request);
+
+    if (cached) return cached;
+
+    const response = await fetch(request);
+
+    if (response && response.ok) {
+        await cache.put(request, response.clone());
+    }
+
+    return response;
 }
 
 self.addEventListener('install', event => {
     event.waitUntil((async () => {
-        await ensureVersionedCache();
+        try {
+            await installCurrentVersion();
+        } catch (err) {
+            console.warn('[SW] Install fallback:', err);
+
+            const fallbackName = `${CACHE_PREFIX}fallback`;
+            await precacheAppShell(fallbackName);
+            currentCacheName = fallbackName;
+        }
+
         await self.skipWaiting();
     })());
 });
 
 self.addEventListener('activate', event => {
     event.waitUntil((async () => {
-        await ensureVersionedCache();
+        const cacheName = await getActiveCacheName();
+        await deleteOldCaches(cacheName);
         await self.clients.claim();
     })());
 });
@@ -121,23 +143,43 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
-    event.respondWith((async () => {
-        const cacheName = await ensureVersionedCache();
-        const cache = await caches.open(cacheName);
+    const url = new URL(event.request.url);
 
-        const cached = await cache.match(event.request);
-        if (cached) return cached;
+    event.respondWith((async () => {
+        const cacheName = await getActiveCacheName();
 
         try {
-            const response = await fetch(event.request);
-
-            if (response && response.ok) {
-                event.waitUntil(cache.put(event.request, response.clone()));
+            // version.json всегда стараемся брать из сети
+            if (url.pathname === '/data/version.json') {
+                return await networkFirst(event.request, cacheName);
             }
 
-            return response;
+            // HTML-навигация тоже network-first, чтобы обновления приходили сразу
+            if (event.request.mode === 'navigate') {
+                try {
+                    return await networkFirst(new Request('/index.html', { cache: 'no-store' }), cacheName);
+                } catch {
+                    const cache = await caches.open(cacheName);
+                    const fallback = await cache.match('/index.html');
+                    if (fallback) return fallback;
+                    throw new Error('No offline index.html');
+                }
+            }
+
+            // Часто меняющиеся данные и основной js — через сеть сначала
+            if (
+                url.pathname === '/scripts/app.js' ||
+                url.pathname === '/data/sites.json' ||
+                url.pathname === '/data/manifest.json'
+            ) {
+                return await networkFirst(event.request, cacheName);
+            }
+
+            // Статика — сначала из кэша
+            return await cacheFirst(event.request, cacheName);
         } catch {
             if (event.request.mode === 'navigate') {
+                const cache = await caches.open(cacheName);
                 const fallback = await cache.match('/index.html');
                 if (fallback) return fallback;
             }
