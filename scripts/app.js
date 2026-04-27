@@ -80,6 +80,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            const registration = await navigator.serviceWorker.register('/worker.js', {
+                scope: '/',
+                updateViaCache: 'none'
+            });
+
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (!newWorker) return;
+
+                newWorker.addEventListener('statechange', () => {
+                    if (
+                        newWorker.state === 'installed' &&
+                        navigator.serviceWorker.controller
+                    ) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+            });
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+        });
+    }
 
     const btnStartTest = document.querySelector('[data-js="start-test"]');
     const testContainer = document.querySelector('[data-js="test-container"]');

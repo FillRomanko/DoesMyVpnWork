@@ -1,7 +1,7 @@
 ﻿const CACHE_PREFIX = 'fetcher-';
 const VERSION_URL = '/data/version.json';
 
-const urlsToCache = [
+const APP_SHELL_URLS = [
     '/',
     '/index.html',
     '/stylesheet/style.css',
@@ -13,43 +13,14 @@ const urlsToCache = [
     '/data/version.json',
 ];
 
-let resolvedCacheName = null;
+async function fetchVersion() {
+    const response = await fetch(VERSION_URL, { cache: 'no-store' });
 
-async function getStoredVersion() {
-    const keys = await caches.keys();
-    const existing = keys
-        .filter(key => key.startsWith(CACHE_PREFIX))
-        .sort()
-        .pop();
-
-    if (!existing) {
-        return { version: null, cacheName: null };
+    if (!response.ok) {
+        throw new Error(`Failed to fetch version.json: ${response.status}`);
     }
 
-    try {
-        const cache = await caches.open(existing);
-        const response = await cache.match(VERSION_URL);
-        if (!response) {
-            return { version: null, cacheName: existing };
-        }
-
-        const data = await response.json();
-        return {
-            version: data?.version ?? null,
-            cacheName: existing
-        };
-    } catch {
-        return { version: null, cacheName: existing };
-    }
-}
-
-async function getNetworkVersion() {
-    const resp = await fetch(VERSION_URL, { cache: 'no-store' });
-    if (!resp.ok) {
-        throw new Error(`Failed to fetch version.json: ${resp.status}`);
-    }
-
-    const data = await resp.json();
+    const data = await response.json();
     if (!data?.version) {
         throw new Error('version.json has no "version" field');
     }
@@ -57,63 +28,56 @@ async function getNetworkVersion() {
     return data.version;
 }
 
-async function ensureVersionedCache() {
-    if (resolvedCacheName) return resolvedCacheName;
+function getCacheName(version) {
+    return `${CACHE_PREFIX}${version}`;
+}
 
-    const stored = await getStoredVersion();
+async function getActiveCacheName() {
+    const keys = await caches.keys();
+    const versionedKeys = keys.filter(key => key.startsWith(CACHE_PREFIX));
 
-    try {
-        const networkVersion = await getNetworkVersion();
-        const nextCacheName = `${CACHE_PREFIX}${networkVersion}`;
+    if (versionedKeys.length === 0) return null;
 
-        if (stored.version !== networkVersion) {
-            const cache = await caches.open(nextCacheName);
+    versionedKeys.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return versionedKeys[versionedKeys.length - 1];
+}
 
-            for (const url of urlsToCache) {
-                try {
-                    await cache.add(url);
-                } catch (err) {
-                    console.warn('[SW] Failed to cache:', url, err);
-                }
+async function precacheAppShell(cacheName) {
+    const cache = await caches.open(cacheName);
+
+    await Promise.all(
+        APP_SHELL_URLS.map(async (url) => {
+            try {
+                await cache.add(new Request(url, { cache: 'no-store' }));
+            } catch (error) {
+                console.warn('[SW] Failed to precache:', url, error);
             }
-
-            const keys = await caches.keys();
-            await Promise.all(
-                keys
-                    .filter(key => key.startsWith(CACHE_PREFIX) && key !== nextCacheName)
-                    .map(key => caches.delete(key))
-            );
-        }
-
-        resolvedCacheName = nextCacheName;
-        return resolvedCacheName;
-    } catch {
-        resolvedCacheName = stored.cacheName || `${CACHE_PREFIX}fallback`;
-
-        if (resolvedCacheName === `${CACHE_PREFIX}fallback`) {
-            const fallbackCache = await caches.open(resolvedCacheName);
-
-            for (const url of urlsToCache) {
-                try {
-                    await fallbackCache.add(url);
-                } catch {}
-            }
-        }
-
-        return resolvedCacheName;
-    }
+        })
+    );
 }
 
 self.addEventListener('install', event => {
     event.waitUntil((async () => {
-        await ensureVersionedCache();
+        const version = await fetchVersion();
+        const cacheName = getCacheName(version);
+
+        await precacheAppShell(cacheName);
         await self.skipWaiting();
     })());
 });
 
 self.addEventListener('activate', event => {
     event.waitUntil((async () => {
-        await ensureVersionedCache();
+        const version = await fetchVersion();
+        const currentCacheName = getCacheName(version);
+
+        const keys = await caches.keys();
+        await Promise.all(
+            keys
+                .filter(key => key.startsWith(CACHE_PREFIX) && key !== currentCacheName)
+                .map(key => caches.delete(key))
+        );
+
         await self.clients.claim();
     })());
 });
@@ -121,27 +85,61 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
-    event.respondWith((async () => {
-        const cacheName = await ensureVersionedCache();
-        const cache = await caches.open(cacheName);
+    const url = new URL(event.request.url);
 
-        const cached = await cache.match(event.request);
-        if (cached) return cached;
+    if (url.origin !== location.origin) return;
+
+    event.respondWith((async () => {
+        const activeCacheName = await getActiveCacheName();
+        const cache = activeCacheName ? await caches.open(activeCacheName) : null;
+
+        if (event.request.mode === 'navigate') {
+            try {
+                const networkResponse = await fetch(event.request, { cache: 'no-store' });
+
+                if (cache && networkResponse.ok) {
+                    event.waitUntil(cache.put('/index.html', networkResponse.clone()));
+                }
+
+                return networkResponse;
+            } catch {
+                if (cache) {
+                    const cachedIndex = await cache.match('/index.html');
+                    if (cachedIndex) return cachedIndex;
+                }
+
+                return new Response('Offline', {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                });
+            }
+        }
+
+        if (cache) {
+            const cachedResponse = await cache.match(event.request, { ignoreSearch: false });
+            if (cachedResponse) {
+                event.waitUntil((async () => {
+                    try {
+                        const freshResponse = await fetch(event.request, { cache: 'no-store' });
+                        if (freshResponse.ok) {
+                            await cache.put(event.request, freshResponse.clone());
+                        }
+                    } catch {}
+                })());
+
+                return cachedResponse;
+            }
+        }
 
         try {
-            const response = await fetch(event.request);
+            const networkResponse = await fetch(event.request, { cache: 'no-store' });
 
-            if (response && response.ok) {
-                event.waitUntil(cache.put(event.request, response.clone()));
+            if (cache && networkResponse.ok) {
+                event.waitUntil(cache.put(event.request, networkResponse.clone()));
             }
 
-            return response;
+            return networkResponse;
         } catch {
-            if (event.request.mode === 'navigate') {
-                const fallback = await cache.match('/index.html');
-                if (fallback) return fallback;
-            }
-
             return new Response('Offline', {
                 status: 503,
                 headers: { 'Content-Type': 'text/plain; charset=utf-8' }
