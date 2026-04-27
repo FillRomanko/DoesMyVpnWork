@@ -10,7 +10,6 @@ const APP_SHELL_URLS = [
     '/data/manifest.json',
     '/data/sites.json',
     '/icons/favicon.svg',
-    '/data/version.json',
 ];
 
 async function fetchVersion() {
@@ -92,6 +91,29 @@ self.addEventListener('fetch', event => {
     event.respondWith((async () => {
         const activeCacheName = await getActiveCacheName();
         const cache = activeCacheName ? await caches.open(activeCacheName) : null;
+
+        // version.json: network-first
+        if (url.pathname === '/data/version.json') {
+            try {
+                const networkResponse = await fetch(event.request, { cache: 'no-store' });
+
+                if (cache && networkResponse.ok) {
+                    event.waitUntil(cache.put(event.request, networkResponse.clone()));
+                }
+
+                return networkResponse;
+            } catch {
+                if (cache) {
+                    const cachedResponse = await cache.match(event.request, { ignoreSearch: false });
+                    if (cachedResponse) return cachedResponse;
+                }
+
+                return new Response(JSON.stringify({ version: null }), {
+                    status: 503,
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                });
+            }
+        }
 
         if (event.request.mode === 'navigate') {
             try {

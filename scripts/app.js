@@ -82,28 +82,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
-            const registration = await navigator.serviceWorker.register('/worker.js', {
-                scope: '/',
-                updateViaCache: 'none'
-            });
+            try {
+                const registration = await navigator.serviceWorker.register('/worker.js', {
+                    scope: '/',
+                    updateViaCache: 'none'
+                });
 
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                if (!newWorker) return;
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (!newWorker) return;
 
-                newWorker.addEventListener('statechange', () => {
-                    if (
-                        newWorker.state === 'installed' &&
-                        navigator.serviceWorker.controller
-                    ) {
-                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            showUpdateNotification();
+                        }
+                    });
+                });
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        window.location.reload();
                     }
                 });
-            });
-
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
+            } catch (err) {
+                console.error(err);
+            }
         });
     }
 
