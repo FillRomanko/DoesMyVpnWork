@@ -1,42 +1,46 @@
 ﻿{
-  "internet": ["https://example.com/"],
+  "internet": [
+    "https://example.com/"
+  ],
   "white": ["https://gosuslugi.ru",
     "https://www.gosuslugi.ru",
     "https://www.gosuslugi.ru/help",
     "https://www.gosuslugi.ru/auth",
     "https://ya.ru",
-    "https://yandex.ru",
     "https://vk.com",
     "https://www.vk.com",
     "https://ok.ru",
     "https://www.mironline.ru",
+    "https://yandex.ru",
     "https://www.cbr.ru",
     "https://www.ozon.ru",
     "https://www.wildberries.ru",
     "https://www.avito.ru",
     "https://www.rutube.ru",
-    "https://dzen.ru"],
+    "https://dzen.ru"
+  ],
   "normal": ["https://github.com",
     "https://gitlab.com",
     "https://bitbucket.org",
     "https://twitch.tv",
     "https://www.twitch.tv",
-    "https://www.reddit.com",
     "https://stackoverflow.com",
     "https://stackexchange.com",
     "https://superuser.com",
     "https://serverfault.com",
     "https://www.figma.com",
-    "https://unity.com/ru"
+    "https://unity.com/ru",
+    "https://www.reddit.com"
   ],
-  "vpn": ["https://www.instagram.com",
-    "https://www.facebook.com",
+  "vpn": ["https://www.facebook.com",
     "https://x.com",
     "https://twitter.com",
-    "https://www.snapchat.com",
-    "https://www.roblox.com",
     "https://www.viber.com",
     "https://www.linkedin.com",
     "https://www.youtube.com",
-    "https://discord.com"]
+    "https://discord.com",
+    "https://www.roblox.com",
+    "https://www.snapchat.com",
+    "https://www.instagram.com"
+  ]
 }
