@@ -1,16 +1,16 @@
 ﻿const CACHE_PREFIX = 'fetcher-';
-const VERSION_URL = '/data/version.json';
-const version = "2026.04.28:021"; // Я устал, босс
+const VERSION_URL = './data/version.json';
+const version = "2026.04.28:03"; // Я устал, босс
 
 const APP_SHELL_URLS = [
-    '/',
-    '/index.html',
-    '/stylesheet/style.css',
-    '/stylesheet/reset.css',
-    '/scripts/app.js',
-    '/data/manifest.json',
-    '/data/sites.json',
-    '/icons/favicon.svg',
+    './',
+    './index.html',
+    './stylesheet/style.css',
+    './stylesheet/reset.css',
+    './scripts/app.js',
+    './data/manifest.json',
+    './data/sites.json',
+    './icons/favicon.svg',
 ];
 
 async function fetchVersion() {
@@ -94,7 +94,7 @@ self.addEventListener('fetch', event => {
         const cache = activeCacheName ? await caches.open(activeCacheName) : null;
 
         // version.json: network-first
-        if (url.pathname === '/data/version.json') {
+        if (url.pathname === './data/version.json') {
             try {
                 const networkResponse = await fetch(event.request, { cache: 'no-store' });
 
@@ -121,7 +121,7 @@ self.addEventListener('fetch', event => {
                 const networkResponse = await fetch(event.request, { cache: 'no-store' });
 
                 if (cache && networkResponse.ok) {
-                    event.waitUntil(cache.put('/index.html', networkResponse.clone()));
+                    event.waitUntil(cache.put('./index.html', networkResponse.clone()));
                 }
 
                 return networkResponse;
