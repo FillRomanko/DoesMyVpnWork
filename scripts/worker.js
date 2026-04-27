@@ -1,6 +1,6 @@
 ﻿const CACHE_PREFIX = 'fetcher-';
 const VERSION_URL = '../data/version.json';
-const version = "2026.04.28:05"; // Я устал, босс
+const version = "2026.04.28"; // Я устал, босс
 
 const APP_SHELL_URLS = [
     '../',
