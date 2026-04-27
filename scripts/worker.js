@@ -1,6 +1,6 @@
 ﻿const CACHE_PREFIX = 'fetcher-';
 const VERSION_URL = '../data/version.json';
-const version = "2026.04.28"; // Я устал, босс
+const version = "2026.04.28:05"; // Я устал, босс
 
 const APP_SHELL_URLS = [
     '../',
@@ -94,7 +94,7 @@ self.addEventListener('fetch', event => {
         const cache = activeCacheName ? await caches.open(activeCacheName) : null;
 
         // version.json: network-first
-        if (url.pathname === './data/version.json') {
+        if (url.pathname === '../data/version.json') {
             try {
                 const networkResponse = await fetch(event.request, { cache: 'no-store' });
 
@@ -121,13 +121,13 @@ self.addEventListener('fetch', event => {
                 const networkResponse = await fetch(event.request, { cache: 'no-store' });
 
                 if (cache && networkResponse.ok) {
-                    event.waitUntil(cache.put('./index.html', networkResponse.clone()));
+                    event.waitUntil(cache.put('../index.html', networkResponse.clone()));
                 }
 
                 return networkResponse;
             } catch {
                 if (cache) {
-                    const cachedIndex = await cache.match('/index.html');
+                    const cachedIndex = await cache.match('../index.html');
                     if (cachedIndex) return cachedIndex;
                 }
 
