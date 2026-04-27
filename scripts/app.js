@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let firstAttemptDone = false;
 
-        await runWithConcurrency(tasks, 5, (result) => {
+        await runWithConcurrency(tasks, 6, (result) => {
             updateCategory(result.cat, result.success);
 
             if (!firstAttemptDone) {
