@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
             try {
-                const registration = await navigator.serviceWorker.register('./scripts/worker.js', {
+                const registration = await navigator.serviceWorker.register('../scripts/worker.js', {
                     updateViaCache: 'none'
                 });
 

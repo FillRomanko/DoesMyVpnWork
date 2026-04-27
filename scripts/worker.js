@@ -1,16 +1,16 @@
 ﻿const CACHE_PREFIX = 'fetcher-';
-const VERSION_URL = './data/version.json';
-const version = "2026.04.28"; // Я устал, босс
+const VERSION_URL = '../data/version.json';
+const version = "2026.04.28:04"; // Я устал, босс
 
 const APP_SHELL_URLS = [
-    './',
-    './index.html',
-    './stylesheet/style.css',
-    './stylesheet/reset.css',
-    './scripts/app.js',
-    './data/manifest.json',
-    './data/sites.json',
-    './icons/favicon.svg',
+    '../',
+    '../index.html',
+    '../stylesheet/style.css',
+    '../stylesheet/reset.css',
+    '../scripts/app.js',
+    '../data/manifest.json',
+    '../data/sites.json',
+    '../icons/favicon.svg',
 ];
 
 async function fetchVersion() {
