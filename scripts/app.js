@@ -10,7 +10,7 @@ if ('serviceWorker' in navigator) {
 
     window.addEventListener('load', async () => {
         try {
-            const reg = await navigator.serviceWorker.register('/scripts/worker.js', {
+            const reg = await navigator.serviceWorker.register('./worker.js', {
                 scope: './',
                 updateViaCache: 'none'
             });
