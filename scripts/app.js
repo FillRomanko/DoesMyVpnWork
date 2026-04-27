@@ -171,7 +171,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             sitesLeft[cat] = [...sitesData[cat]];
         });
 
-        let firstAttemptDone = false;
 
         // 5. Функция обновления категории (прогресс-бар и статистика)
         const updateCategory = (cat, isSuccess) => {
@@ -213,60 +212,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         // 7. Основной цикл (обходим категории по кругу, пока есть сайты)
-        let anyLeft = true;
-        while (anyLeft) {
-            anyLeft = false;
-            for (const cat of categories) {
-                const sites = sitesLeft[cat];
-                if (sites.length === 0) continue;
-                anyLeft = true;
+        const tasks = buildInterleavedTasks(categories, sitesData);
 
-                const site = sites.shift();
-                console.log(`⏳ Запрос к ${site} (категория ${cat})`);
+        let firstAttemptDone = false;
 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+        await runWithConcurrency(tasks, 5, (result) => {
+            updateCategory(result.cat, result.success);
 
-                let success = false;
-                try {
-                    await fetch(site, {
-                        method: 'HEAD',
-                        mode: 'no-cors',
-                        cache: 'no-cache',
-                        signal: controller.signal
-                    });
-                    success = true;
-                    console.log(`✅ Успех: ${site}`);
-                } catch (err) {
-                    console.log(`❌ Ошибка/таймаут: ${site} — ${err.message}`);
-                } finally {
-                    clearTimeout(timeoutId);
+            if (!firstAttemptDone) {
+                firstAttemptDone = true;
+
+                if (!installBtn && !isRunningAsApp()) {
+                    installBtn = document.createElement('button');
+                    installBtn.textContent = 'Установить на своё устройство';
+                    installBtn.className = 'install-btn';
+                    installBtn.onclick = handleInstall;
+                    testContainer.insertBefore(installBtn, retryBtn);
                 }
-
-                updateCategory(cat, success);
-
-                if (!firstAttemptDone) {
-                    firstAttemptDone = true;
-                    statusDiv.textContent = getStatusMessage();
-
-                    // Создаём кнопку установки, если ещё не создана
-                    if (!installBtn && !isRunningAsApp()) {
-                        installBtn = document.createElement('button');
-                        installBtn.textContent = 'Установить на своё устройство';
-                        installBtn.className = 'install-btn'; // добавим класс для стилизации
-                        installBtn.onclick = handleInstall; // глобальная функция
-                        // Вставляем после statusDiv, но перед retryBtn
-                        testContainer.insertBefore(installBtn, retryBtn);
-                    }
-                } else {
-                    // Обновляем сообщение после каждого запроса
-                    statusDiv.textContent = getStatusMessage();
-                }
-
-                statusDiv.textContent = getStatusMessage();
-                await new Promise(resolve => setTimeout(resolve, 50)); // небольшая пауза
             }
-        }
+
+            statusDiv.textContent = getStatusMessage();
+        });
 
         retryBtn.style.display = 'block';
         console.log('🏁 Тест завершён. Итоговые результаты:', categoryRows);
@@ -302,4 +268,77 @@ function showInstallInstructions() {
     else if (ua.includes('android')) msg += 'Chrome > Меню > Добавить на главный экран';
     else msg += 'Chrome/Edge > Адресная строка > ⋮ > Установить';
     alert(msg);
+}
+
+async function checkSite(site, cat) {
+    console.log(`⏳ Запрос к ${site} (категория ${cat})`);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    let success = false;
+
+    try {
+        await fetch(site, {
+            method: 'HEAD',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            signal: controller.signal
+        });
+        success = true;
+        console.log(`✅ Успех: ${site}`);
+    } catch (err) {
+        console.log(`❌ Ошибка/таймаут: ${site} — ${err.message}`);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+
+    return { site, cat, success };
+}
+
+async function runWithConcurrency(tasks, limit, onResult) {
+    let index = 0;
+
+    async function worker() {
+        while (index < tasks.length) {
+            const currentIndex = index++;
+            const task = tasks[currentIndex];
+            const result = await checkSite(task.site, task.cat);
+            onResult(result);
+        }
+    }
+
+    const workers = Array.from(
+        { length: Math.min(limit, tasks.length) },
+        () => worker()
+    );
+
+    await Promise.allSettled(workers);
+}
+
+// Чередование категорий
+function buildInterleavedTasks(categories, sitesData) {
+    const queues = {};
+    categories.forEach(cat => {
+        queues[cat] = [...sitesData[cat]];
+    });
+
+    const tasks = [];
+    let hasAny = true;
+
+    while (hasAny) {
+        hasAny = false;
+
+        for (const cat of categories) {
+            if (queues[cat].length > 0) {
+                hasAny = true;
+                tasks.push({
+                    cat,
+                    site: queues[cat].shift()
+                });
+            }
+        }
+    }
+
+    return tasks;
 }
